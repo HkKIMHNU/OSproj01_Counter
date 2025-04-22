@@ -7,18 +7,18 @@
 #include <string>
 using namespace std;
 
-// цж╢К ╫╨╥╧╣Е ╪Ж а╕гя
+// О©╫ж╢О©╫ О©╫О©╫О©╫О©╫О©╫О©╫ О©╫О©╫ О©╫О©╫О©╫О©╫
 const int MAX_THREADS = 16;
 
-// юЭ©╙ ╨╞╪Ж
-int n, freq, maxVal;                           // ют╥б юнюз: ╫╨╥╧╣Е ╟Ё╪Ж, ╨С╣╣, цж╢К д╚©Нф╝ ╟╙
-atomic<bool> terminateFlag(false);             // а╬╥А ╫ехё
-atomic<int> selectedCounter(0);                // ╪╠ец╣х д╚©Нем юн╣╕╫╨
-atomic<int> counters[MAX_THREADS];             // д╚©Нем ╟╙ юЗюЕ
-atomic<bool> counterStates[MAX_THREADS];       // д╚©Нем ╣©юш ╩Себ (counting/paused)
-mutex consoleMutex;                            // дэ╪ж цБ╥б ╨╦хё
+// О©╫О©╫О©╫О©╫ О©╫О©╫О©╫О©╫
+int n, freq, maxVal;                           // О©╫т╥О©╫ О©╫О©╫О©╫О©╫: О©╫О©╫О©╫О©╫О©╫О©╫ О©╫О©╫О©╫О©╫, О©╫О©╫, О©╫ж╢О©╫ д╚О©╫О©╫ф╝ О©╫О©╫
+atomic<bool> terminateFlag(false);             // О©╫О©╫О©╫О©╫ О©╫О©╫хё
+atomic<int> selectedCounter(0);                // О©╫О©╫О©╫ц╣О©╫ д╚О©╫О©╫О©╫О©╫ О©╫н╣О©╫О©╫О©╫
+atomic<int> counters[MAX_THREADS];             // д╚О©╫О©╫О©╫О©╫ О©╫О©╫ О©╫О©╫О©╫О©╫
+atomic<bool> counterStates[MAX_THREADS];       // д╚О©╫О©╫О©╫О©╫ О©╫О©╫О©╫О©╫ О©╫О©╫О©╫О©╫ (counting/paused)
+mutex consoleMutex;                            // О©╫э╪О©╫ О©╫О©╫О©╫ О©╫О©╫хё
 
-// ╦М╥игЮ юнюз фд╫л (╪Ь╪╜ ╧╚╟Э)
+// О©╫О©╫О©╫О©╫О©╫ О©╫О©╫О©╫О©╫ О©╫д╫О©╫ (О©╫О©╫О©╫О©╫ О©╫О©╫О©╫О©╫)
 bool parseArgs(int argc, char* argv[]) {
     if (argc != 4) return false;
     for (int i = 1; i < 4; ++i) {
@@ -36,7 +36,7 @@ bool parseArgs(int argc, char* argv[]) {
     return true;
 }
 
-// д╚©Нем ╫╨╥╧╣Е гт╪Ж
+// д╚О©╫О©╫О©╫О©╫ О©╫О©╫О©╫О©╫О©╫О©╫ О©╫т╪О©╫
 void counterThread(int id) {
     using clock = chrono::steady_clock;
     auto nextTick = clock::now();
@@ -46,15 +46,21 @@ void counterThread(int id) {
             int current = counters[id].load();
             counters[id].store((current + 1 > maxVal) ? 0 : current + 1);
             nextTick += chrono::milliseconds(1000) / freq;
-            this_thread::sleep_until(nextTick);  // а╓х╝гя ╫ца║╠НаЖ ╢К╠Б
+            this_thread::sleep_until(nextTick);  // О©╫О©╫х╝О©╫О©╫ О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫ О©╫О©╫О©╫
         } else {
             this_thread::sleep_for(chrono::milliseconds(100));
-            nextTick = clock::now(); // paused юлхд ╢ы╫ц ╠Баьа║ ╦бцЦ
+            nextTick = clock::now(); // paused О©╫О©╫О©╫О©╫ О©╫ы╫О©╫ О©╫О©╫О©╫О©╫О©╫О©╫ О©╫О©╫О©╫О©╫
         }
     }
 }
 
-// UI ╫╨╥╧╣Е гт╪Ж
+void moveTo(int x, int y) {
+    COORD coord = { (SHORT)x, (SHORT)y };
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+}
+
+
+// UI О©╫О©╫О©╫О©╫О©╫О©╫ О©╫т╪О©╫
 void uiThread() {
     while (!terminateFlag.load()) {
         if (_kbhit()) {
@@ -68,13 +74,15 @@ void uiThread() {
             }
         }
 
-        {   // х╜╦И цБ╥б
+        {   // х╜О©╫О©╫ О©╫О©╫О©╫
             lock_guard<mutex> lock(consoleMutex);
-			system("cls"); 
+            moveTo(0, 0); // Л╩╓Л└°К╔╪ К╖╗ Л°└К║° Л²╢К▐≥
             for (int i = 0; i < n; ++i) {
-                cout << "counter" << i << " : " << counters[i].load() << " (" << (counterStates[i].load() ? "counting" : "paused") << ")\n";
+                cout << "counter" << i << " : " << counters[i].load() << " ("
+                     << (counterStates[i].load() ? "counting" : "paused") << ")\n";
             }
-            cout << "\ncurrent: counter" << selectedCounter.load() << " (" << (counterStates[selectedCounter.load()].load() ? "counting" : "paused") << ")\n";
+            cout << "\ncurrent: counter" << selectedCounter.load()
+                 << " (" << (counterStates[selectedCounter.load()].load() ? "counting" : "paused") << ")\n";
         }
 
         Sleep(100);
@@ -88,22 +96,22 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // д╚©Нем цй╠Бх╜
+    // д╚О©╫О©╫О©╫О©╫ О©╫й╠О©╫х╜
     for (int i = 0; i < n; ++i) {
         counters[i].store(0);
         counterStates[i].store(false);
     }
 
-    // д╚©Нем ╫╨╥╧╣Е ╩Щ╪╨
+    // д╚О©╫О©╫О©╫О©╫ О©╫О©╫О©╫О©╫О©╫О©╫ О©╫О©╫О©╫О©╫
     thread threads[MAX_THREADS];
     for (int i = 0; i < n; ++i) {
         threads[i] = thread(counterThread, i);
     }
 
-    // UI ╫╨╥╧╣Е ╩Щ╪╨
+    // UI О©╫О©╫О©╫О©╫О©╫О©╫ О©╫О©╫О©╫О©╫
     thread ui(uiThread);
 
-    // ╫╨╥╧╣Е а╬╥А ╢К╠Б
+    // О©╫О©╫О©╫О©╫О©╫О©╫ О©╫О©╫О©╫О©╫ О©╫О©╫О©╫
     for (int i = 0; i < n; ++i) threads[i].join();
     ui.join();
 
