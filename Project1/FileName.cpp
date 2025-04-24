@@ -7,16 +7,15 @@
 #include <string>
 using namespace std;
 
-// �ִ� ������ �� ����
 const int MAX_THREADS = 16;
 
 // ���� ����
-int n, freq, maxVal;                           // �Է� ����: ������ ����, ��, �ִ� ī��Ʈ ��
-atomic<bool> terminateFlag(false);             // ���� ��ȣ
-atomic<int> selectedCounter(0);                // ���õ� ī���� �ε���
-atomic<int> counters[MAX_THREADS];             // ī���� �� ����
-atomic<bool> counterStates[MAX_THREADS];       // ī���� ���� ���� (counting/paused)
-mutex consoleMutex;                            // �ܼ� ��� ��ȣ
+int n, freq, maxVal;                           
+atomic<bool> terminateFlag(false);             
+atomic<int> selectedCounter(0);                
+atomic<int> counters[MAX_THREADS];             
+atomic<bool> counterStates[MAX_THREADS];       
+mutex consoleMutex;                            
 
 // ����� ���� �Ľ� (���� ����)
 bool parseArgs(int argc, char* argv[]) {
@@ -46,10 +45,10 @@ void counterThread(int id) {
             int current = counters[id].load();
             counters[id].store((current + 1 > maxVal) ? 0 : current + 1);
             nextTick += chrono::milliseconds(1000) / freq;
-            this_thread::sleep_until(nextTick);  // ��Ȯ�� �������� ���
+            this_thread::sleep_until(nextTick); 
         } else {
             this_thread::sleep_for(chrono::milliseconds(100));
-            nextTick = clock::now(); // paused ���� �ٽ� ������ ����
+            nextTick = clock::now(); 
         }
     }
 }
@@ -60,7 +59,6 @@ void moveTo(int x, int y) {
 }
 
 
-// UI ������ �Լ�
 void uiThread() {
     while (!terminateFlag.load()) {
         if (_kbhit()) {
@@ -74,9 +72,9 @@ void uiThread() {
             }
         }
 
-        {   // ȭ�� ���
+        {   
             lock_guard<mutex> lock(consoleMutex);
-            moveTo(0, 0); // 커서를 맨 위로 이동
+            moveTo(0, 0); 
             for (int i = 0; i < n; ++i) {
                 cout << "counter" << i << " : " << counters[i].load() << " ("
                      << (counterStates[i].load() ? "counting" : "paused") << ")\n";
@@ -96,22 +94,20 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // ī���� �ʱ�ȭ
+
     for (int i = 0; i < n; ++i) {
         counters[i].store(0);
         counterStates[i].store(false);
     }
 
-    // ī���� ������ ����
+
     thread threads[MAX_THREADS];
     for (int i = 0; i < n; ++i) {
         threads[i] = thread(counterThread, i);
     }
 
-    // UI ������ ����
     thread ui(uiThread);
 
-    // ������ ���� ���
     for (int i = 0; i < n; ++i) threads[i].join();
     ui.join();
 
